@@ -9,7 +9,7 @@ diff_f = diff(f,x)
 diff_f_x = diff_f.evalf(subs={x:0.2})
 
 # Backward Difference for O(h)
-h = np.logspace(-5,1, 50)
+h = np.logspace(-5,1, 100)
 x_prev = 0.2-h
 x_prev_prev = 0.2 - (2*h)
 x_next_next = 0.2 + (2*h)
