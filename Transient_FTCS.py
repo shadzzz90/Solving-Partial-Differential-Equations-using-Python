@@ -6,20 +6,20 @@ DENSITY = 2.7889*1e3   # Kg/m^3
 THERMAL_COND = 0.2473*1e3 # W/m-K
 SPECIFIC_HEAT = 0.7639*1e3 # J/Kg-K
 LENGTH = 0.12 # m
-TIME = 200  # secs
+TIME = 2000  # secs
 
-N1 = 100
-N2 = 200
-N3 = 300
-N4 = 500
-N5 = 1000
-N6 = 2000
+N1 = 1000
+N2 = 2000
+N3 = 3000
+N4 = 5000
+N5 = 10000
+N6 = 20000
 
 h = 3000 # W/m-K
-NUM_PTS_X = 50
+NUM_PTS_X = 100
 DELTA_X = LENGTH/NUM_PTS_X
 LAMBDA = THERMAL_COND/(DENSITY*SPECIFIC_HEAT)
-DELTA_T = DELTA_X ** 2 / (2 * LAMBDA)
+DELTA_T = DELTA_X ** 2 / (2* LAMBDA)
 SIGMA = (LAMBDA * DELTA_T) / DELTA_X ** 2
 NUM_PTS_T = int(TIME/ DELTA_T)
 print(NUM_PTS_T)
@@ -70,8 +70,8 @@ def plottemp(u,spaceLocation, time):
     plt.plot(spaceLocation, u[4, :], '--g')
     plt.plot(spaceLocation, u[5, :], '--b')
 
-    plt.xlabel('Length')
-    plt.ylabel('Tempreature')
+    plt.xlabel('Length (m)')
+    plt.ylabel('Tempreature (K)')
     plt.title('Length ($x$)  vs. Tempreature ($u$)')
     label0 = 't ={0:0.2f} secs'.format(time[0])
     label1 = 't ={0:0.2f} secs'.format(time[1])
@@ -94,6 +94,7 @@ def solver_FTCS():
     uc = np.zeros(len(spaceLocation))
     u = np.zeros((6, len(spaceLocation)))
     time = []
+    u_ss = np.full(len(spaceLocation), T_amb)
 
     for t in range(1, len(timeLocation)):
 
@@ -129,7 +130,13 @@ def solver_FTCS():
             u[5, :] = up
             time.append(N6 * DELTA_T)
 
-    plottemp (u, spaceLocation, time)
+        u_check = np.subtract(up, u_ss)
+
+        if (u_check < 0.001).all():
+            print("Steady state reached at {0:0.2f} secs".format(timeLocation[t]))
+            break
+
+    plottemp(u, spaceLocation, time)
 
 
 
