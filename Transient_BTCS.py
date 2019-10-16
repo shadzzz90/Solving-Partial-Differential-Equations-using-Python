@@ -233,28 +233,11 @@ def solver_BTCS(spaceMeshLocations, timeMeshLocations):
 
     return u_hist, u_time
 
-#
-# def tempBoudary_nodes (u_hist):
-#
-#     for i in range(0,len(u_hist)):
-#
-#         temp = u_hist[i]
-#         n = len(temp)
-#         u_0 = (temp[0]+ALPHA*T_amb)/(1+ALPHA)
-#         u_n = (temp[n-1]+ALPHA*T_amb)/(1+ALPHA)
-#         temp = np.insert(temp, 0, u_0)
-#         temp = np.append(temp, u_n)
-#         u_hist[i] = temp
-#
-#     return u_hist
-
 
 spaceMeshLocations, timeMeshLocations = meshing()
 
-
 u_history, u_time = solver_BTCS(spaceMeshLocations, timeMeshLocations)
 
-# print(u_history)
 
 heat_flux = flux(u_history,spaceMeshLocations)
 
