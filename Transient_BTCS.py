@@ -9,7 +9,7 @@ SPECIFIC_HEAT = 450 # J/Kg-K
 LENGTH = 0.6 # m
 TIME =1000# secs
 
-h = 1e100# W/m-K
+h = 1e5# W/m-K
 NUM_PTS_X = 100
 NUM_PTS_T = 1000
 DELTA_X = LENGTH/NUM_PTS_X
@@ -80,7 +80,7 @@ def meshing():
     return spaceMeshLocations, timeMeshLocations
 
 
-def plottemp(u,spaceLocation, u_time, timeLocation):
+def plottemp(u,spaceLocation, u_time, timeLocation, flux):
 
     plt.figure(1)
     plt.plot(spaceLocation,u[0], 'r')
@@ -113,10 +113,32 @@ def plottemp(u,spaceLocation, u_time, timeLocation):
 
     plt.show()
 
+    plt.figure(3)
+    plt.plot(spaceLocation, flux[0,:], 'r')
+    plt.plot(spaceLocation, flux[1,:], 'g')
+    plt.plot(spaceLocation, flux[2,:], 'b')
+    plt.plot(spaceLocation, flux[3,:], '--r')
+    plt.plot(spaceLocation, flux[4,:], '--g')
+
+    plt.xlabel('Length (m)')
+    plt.ylabel('Flux ($W/m^2$)')
+    plt.title('Flux  vs. Tempreature')
+    label0 = 't = 0 secs'
+    label1 = 't = 10 secs'
+    label2 = 't = 100 secs'
+    label3 = 't = 500 secs'
+    label4 = 't = 1000 secs'
+
+
+    plt.gca().legend((label0, label1, label2, label3, label4), loc='upper right')
+    # plt.ylim(280, 1800)
+    plt.xlim(0, 0.6)
+    plt.show()
+
 def flux(u_hist, spaceMeshLocations):
     """Calculating the flux"""
 
-    FLUX = []
+    FLUX = np.zeros((len(u_time),len(spaceMeshLocations)))
     n = len(spaceMeshLocations)
     flux = np.zeros(n)
 
@@ -132,12 +154,9 @@ def flux(u_hist, spaceMeshLocations):
 
         flux[n-1] = - THERMAL_COND*(((1-ALPHA)*u_temp[n-1] + ALPHA*T_amb-u_temp[n-2])/(2*DELTA_X))
 
-        FLUX.append(flux)
+        FLUX[i,:] = flux
 
-    return(FLUX)
-
-
-
+    return FLUX
 
 
 
@@ -237,8 +256,10 @@ u_history, u_time = solver_BTCS(spaceMeshLocations, timeMeshLocations)
 
 # print(u_history)
 
+heat_flux = flux(u_history,spaceMeshLocations)
 
-plottemp(u_history,spaceMeshLocations, u_time, timeMeshLocations)
+
+plottemp(u_history,spaceMeshLocations, u_time, timeMeshLocations, heat_flux)
 
 
 
