@@ -117,7 +117,8 @@ def flux(u_hist, spaceMeshLocations):
     """Calculating the flux"""
 
     FLUX = []
-    flux = np.zeros(len(spaceMeshLocations))
+    n = len(spaceMeshLocations)
+    flux = np.zeros(n)
 
     for i in range(0,len(u_hist)):
 
@@ -125,14 +126,15 @@ def flux(u_hist, spaceMeshLocations):
 
         flux[0] = - THERMAL_COND*((u_temp[1]-(1-ALPHA)*u_temp[0]-ALPHA*T_amb)/(2*DELTA_X))
 
-        for j in range(1,len(spaceMeshLocations)-1):
+        for j in range(1,n-1):
 
             flux[j] = - THERMAL_COND*((u_temp[j+1]-u_temp[j-1])/(2*DELTA_X))
 
+        flux[n-1] = - THERMAL_COND*(((1-ALPHA)*u_temp[n-1] + ALPHA*T_amb-u_temp[n-2])/(2*DELTA_X))
 
+        FLUX.append(flux)
 
-
-
+    return(FLUX)
 
 
 
@@ -234,6 +236,7 @@ spaceMeshLocations, timeMeshLocations = meshing()
 u_history, u_time = solver_BTCS(spaceMeshLocations, timeMeshLocations)
 
 # print(u_history)
+
 
 plottemp(u_history,spaceMeshLocations, u_time, timeMeshLocations)
 
