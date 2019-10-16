@@ -238,9 +238,7 @@ spaceMeshLocations, timeMeshLocations = meshing()
 
 u_history, u_time = solver_BTCS(spaceMeshLocations, timeMeshLocations)
 
-
 heat_flux = flux(u_history,spaceMeshLocations)
-
 
 plottemp(u_history,spaceMeshLocations, u_time, timeMeshLocations, heat_flux)
 
