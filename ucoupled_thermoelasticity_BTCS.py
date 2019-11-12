@@ -1,12 +1,12 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from math import *
+# from math import *
 
-NUM_PTS_R_TC = 10
-NUM_PTS_R_STL =10
+NUM_PTS_R_TC = 5
+NUM_PTS_R_STL = 5
 NUM_PTS_T = 10
-TIME = 5  # secs
+TIME = 2 # secs
 T_inital = 293 # K
 T_amb = 303 # K
 
@@ -36,63 +36,134 @@ DELTA_R_STL = thickness_STL/NUM_PTS_R_STL
 
 DELTA_T = TIME / NUM_PTS_T
 
-betaTC = (DIFF_TC * DELTA_T) / (DELTA_R_TC**2)
-betaSTL = (DIFF_STL * DELTA_T) / (DELTA_R_STL**2)
+betaTC = (DIFF_TC * DELTA_T) / (DELTA_R_TC)
+betaSTL = (DIFF_STL * DELTA_T) / (DELTA_R_STL)
 
 GAMMA = (K_STL*DELTA_R_TC)/(K_TC*DELTA_R_STL)
 
 LAMBDA = (h*DELTA_R_STL)/K_STL
 
 
-def matrix_builder_STL():
+# def matrix_builder_STL():
+#
+#
+#     n_STL = len(spaceLocations_STL)-2
+#
+#     A_STL = np.zeros((n_STL,n_STL))
+#
+#     for i in range(0,n_STL-1):
+#         A_STL[i][i] = (1+2*betaSTL)
+#
+#     temp = (betaSTL/(1+LAMBDA))*(1+(1/n_STL))
+#
+#     A_STL[n_STL-1][n_STL-1] = 1+2*betaSTL-temp
+#
+#
+#     for i in range(0,n_STL-1):
+#         A_STL[i][i+1] = -betaSTL*(1+(1/(i+1)))
+#         A_STL[i+1][i] = -betaSTL*(1-(1/(i+2)))
+#
+#
+#     b_STL = np.full(n_STL, T_inital)
+#
+#     b_STL[n_STL-1] = b_STL[n_STL-1] + ((LAMBDA*betaSTL)/(1+LAMBDA))*(1+(1/n_STL))*T_amb
+#
+#
+#     return A_STL, b_STL
+#
+# def matrix_builder_TC(T_first_STL):
+#
+#     n_TC = len(spaceLocations_TC) - 2
+#
+#     A_TC = np.zeros((n_TC, n_TC))
+#
+#     for i in range(0, n_TC - 1):
+#         A_TC[i][i] = (1 + 2 * betaTC)
+#
+#     temp = (betaTC / (1 + GAMMA)) * (1 + (1 / n_TC))
+#
+#     A_TC[n_TC - 1][n_TC - 1] = 1 + 2 * betaTC - temp
+#
+#     for i in range(0,n_TC-1):
+#         A_TC[i][i+1] = -betaTC*(1+(1/(i+1)))
+#         A_TC[i+1][i] = -betaTC*(1-(1/(i+2)))
+#
+#     b_TC = np.full(n_TC, T_inital)
+#
+#     b_TC[n_TC - 1] = b_TC[n_TC - 1] + ((GAMMA * betaTC) / (1 + GAMMA)) * (1 + (1 / n_TC)) * T_first_STL
+#
+#     return A_TC, b_TC
+
+def matrix_builder(spaceLocations_STL, spaceLocations_TC):
+
+    n = (len(spaceLocations_STL)-2)+(len(spaceLocations_TC)-2)
+    A_TC = np.zeros(len(spaceLocations_TC)-3)
+    A_STL = np.zeros(len(spaceLocations_STL)-2)
+    C_TC = np.zeros(len(spaceLocations_TC)-2)
+    C_STL = np.zeros(len(spaceLocations_STL)-3)
+    B_TC = np.zeros(len(spaceLocations_TC)-2)
+    B_STL = np.zeros(len(spaceLocations_STL)-2)
+    A = np.zeros((n,n))
 
 
-    n_STL = len(spaceLocations_STL)-2
+    for i in range(0, len(A_STL)):
 
-    A_STL = np.zeros((n_STL,n_STL))
+        A_STL[i] = - betaSTL*(1/DELTA_R_STL-1/(inDia_STL+(i+1)*DELTA_R_STL))
 
-    for i in range(0,n_STL-1):
-        A_STL[i][i] = (1+2*betaSTL)
+    for i in range(0, len(A_TC)):
+        A_TC[i] = - betaTC * (1 / DELTA_R_TC - 1 / (inDia_TC + (i+1) * DELTA_R_TC))
 
-    temp = (betaSTL/(1+LAMBDA))*(1+(1/n_STL))
+    A_STL[0] = A_STL[0]/(1+GAMMA)
 
-    A_STL[n_STL-1][n_STL-1] = 1+2*betaSTL-temp
+    for i in range(0, len(C_TC)):
+
+        C_TC[i] = - betaTC*(1/DELTA_R_TC+1/(inDia_TC+(i+1)*DELTA_R_TC))
+
+    for i in range(0, len(C_STL)):
+        C_STL[i] = - betaSTL * (1 / DELTA_R_STL + 1 / (inDia_STL + (i+1) * DELTA_R_STL))
+
+    C_TC[-1] = (GAMMA*C_TC[-1])/(1+GAMMA)
+
+    for i in range(0,len(B_TC)):
+        B_TC[i] = 1+(2*betaTC)/DELTA_R_TC
+
+    for i in range(0,len(B_STL)):
+        B_STL[i] = 1+(2*betaSTL)/DELTA_R_STL
+
+    B_TC[-1] = B_TC[-1]+C_TC[-1]/(1+GAMMA)
+    B_STL[0] = B_STL[0]+(A_STL[0]*GAMMA)/(1+GAMMA)
+    B_STL[-1] = B_STL[-1]+ C_STL[-1]/(1+LAMBDA)
 
 
-    for i in range(0,n_STL-1):
-        A_STL[i][i+1] = -betaSTL*(1+(1/(i+1)))
-        A_STL[i+1][i] = -betaSTL*(1-(1/(i+2)))
+    for i in range(0,len(spaceLocations_TC)-2):
+
+        A[i][i] = B_TC[i]
+
+    for i in range((len(spaceLocations_TC)-2), n):
+
+        A[i][i] = B_STL[i-(len(spaceLocations_TC)-2)]
 
 
-    b_STL = np.full(n_STL, T_inital)
+    for i in range(0,len(spaceLocations_TC)-2):
 
-    b_STL[n_STL-1] = b_STL[n_STL-1] + ((LAMBDA*betaSTL)/(1+LAMBDA))*(1+(1/n_STL))*T_amb
+        A[i][i+1] = C_TC[i]
+
+    for i in range(0, len(spaceLocations_TC) - 3):
+        A[i+1][i] = A_TC[i]
 
 
-    return A_STL, b_STL
+    for i in range((len(spaceLocations_TC)-2), n-1):
 
-def matrix_builder_TC(T_last):
+        A[i][i+1] = C_STL[i-(len(spaceLocations_TC)-2)]
 
-    n_TC = len(spaceLocations_TC) - 2
 
-    A_TC = np.zeros((n_TC, n_TC))
+    for i in range((len(spaceLocations_TC)-3), n-1):
 
-    for i in range(0, n_TC - 1):
-        A_TC[i][i] = (1 + 2 * betaTC)
+        A[i+1][i] = A_STL[i-(len(spaceLocations_TC)-3)]
 
-    temp = (betaTC / (1 + GAMMA)) * (1 + (1 / n_TC))
 
-    A_TC[n_TC - 1][n_TC - 1] = 1 + 2 * betaTC - temp
+    return A
 
-    for i in range(0,n_TC-1):
-        A_TC[i][i+1] = -betaTC*(1+(1/(i+1)))
-        A_TC[i+1][i] = -betaTC*(1-(1/(i+2)))
-
-    b_TC = np.full(n_TC, T_inital)
-
-    b_TC[n_TC - 1] = b_TC[n_TC - 1] + ((GAMMA * betaTC) / (1 + GAMMA)) * (1 + (1 / n_TC)) * T_last
-
-    return A_TC, b_TC
 
 
 
@@ -172,15 +243,54 @@ def SR_solver(A,b):
 
     return x_next
 
+# def mainSolver(timeLocations):
+#
+#
+#
+#     A_STL, b_STL = matrix_builder_STL()
+#
+#     x_STL = SR_solver(A_STL, b_STL)
+#
+#     A_TC, b_TC = matrix_builder_TC(x_STL[0])
+#
+#     x_TC = SR_solver(A_TC, b_TC)
+#
+#     for i in range(1,len(timeLocations)):
+#
+#         x_curr_STL = SR_solver(A_STL,x_STL)
+#
+#         x_curr_TC =  SR_solver(A_TC,x_TC)
+#
+#         x_STL[:] = x_curr_STL[:]
+#         x_TC[:] = x_curr_TC[:]
+#     # x_STL2 = SR_solver(A_STL, x_STL)
+#     # x_TC2 = SR_solver(A_TC,x_TC)
+#
+#
+#     return  x_TC, x_STL
+
+# def test(timeLocations):
+#
+#     T = np.zeros(len(timeLocations))
+#
+#     for i in range(0, len(timeLocations)):
+#
+#         T[i] = 293+553*(1 - exp(-10*i*DELTA_T))
+#
+#
+#     plt.plot(timeLocations, T)
+#     plt.show()
+#
+
+
+
 
 
 spaceLocations_TC, spaceLocations_STL, timeLocations = meshing()
 
-A_STL, b_STL = matrix_builder_STL()
+print(matrix_builder(spaceLocations_STL,spaceLocations_TC))
 
-x_temp = SR_solver(A_STL, b_STL)
+#
+# print(mainSolver(timeLocations))
 
-A_TC, b_TC = matrix_builder_TC(x_temp[0])
-
-print(SR_solver(A_TC, b_TC), x_temp)
-
+# test(timeLocations)
