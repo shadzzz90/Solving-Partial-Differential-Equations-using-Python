@@ -1,14 +1,15 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-# from math import *
+from math import *
 
-NUM_PTS_R_TC = 5
-NUM_PTS_R_STL = 5
-NUM_PTS_T = 10
-TIME = 2 # secs
+NUM_PTS_R_TC = 20
+NUM_PTS_R_STL = 20
+NUM_PTS_T = 80
+TIME = 100 # secs
 T_inital = 293 # K
 T_amb = 303 # K
+T_final = 573 # K
 
 h = 200 # W/m^2-K
 RHO_TC = 15.88*1e3 # Tungsten Carbide Kg/m^3
@@ -162,8 +163,23 @@ def matrix_builder(spaceLocations_STL, spaceLocations_TC):
         A[i+1][i] = A_STL[i-(len(spaceLocations_TC)-3)]
 
 
-    return A
+    b = np.full(n, T_inital)
 
+
+
+    return A, b, n, C_STL
+
+
+def boundary_vector(t,n, C_STL):
+
+    BoundaryTerm = np.zeros(n)
+    T = T_inital + (T_final-T_inital)*(1-exp(-10*t))
+
+    BoundaryTerm[0] = betaTC*T*(1/DELTA_R_TC-1/(inDia_TC+DELTA_R_TC))
+
+    BoundaryTerm[-1] = (-LAMBDA*C_STL[-1]*T_amb)/(1+LAMBDA)
+
+    return BoundaryTerm
 
 
 
@@ -190,7 +206,7 @@ def SR_solver(A,b):
     """Sucessive Relaxation Solver"""
 
     n=len(b)
-    relax_factor = 1
+    relax_factor = 1.76
     epsilon = 1e-8
 
     # A = np.random.randn(n,n)+4*np.eye(n)
@@ -269,28 +285,132 @@ def SR_solver(A,b):
 #
 #     return  x_TC, x_STL
 
-# def test(timeLocations):
+def test(timeLocations):
+
+    T = np.zeros(len(timeLocations))
+
+    for i in range(0, len(timeLocations)):
+
+        T[i] = T_inital+(T_final-T_inital)*(1 - exp(-10*i*DELTA_T))
+
+
+    plt.plot(timeLocations, T)
+    plt.show()
+
+def b_matrix_builder(b,BoundaryTerm ):
+
+    b_total = b+BoundaryTerm
+
+    return b_total
+
+
+def plotter(T_history, spaceLocations, timeLocations):
+
+    # plt.contour(timeLocations,spaceLocations,T_history.T)
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Length (m)')
+    #
+    # plt.show()
+
+
+    plt.plot(spaceLocations, T_history[0,:], 'r')
+    plt.plot(spaceLocations, T_history[20, :], 'g')
+    plt.plot(spaceLocations, T_history[30, :],'b')
+    plt.plot(spaceLocations, T_history[50, :], '-ro')
+    plt.plot(spaceLocations, T_history[80, :], '-go')
+    plt.xlabel('Length (m)')
+    plt.ylabel('Temp')
+    plt.show()
+
+
+
+
+def main_solver():
+
+
+    spaceLocations_TC, spaceLocations_STL, timeLocations = meshing()
+
+
+
+    A, b, n, C_STL = matrix_builder(spaceLocations_STL, spaceLocations_TC)
+
+    BoundaryTerm = boundary_vector(DELTA_T, n, C_STL)
+
+    b_total = b_matrix_builder(b, BoundaryTerm)
+
+    x_intial = np.linalg.solve(A, b_total)
+    x_curr = np.zeros(n)
+    T_history = np.zeros((len(timeLocations), n))
+    T_history_new = np.zeros((len(timeLocations), n+3))
+    T_history[0,:] = x_intial[:]
+
+    for i in range(1, len(timeLocations)):
+
+        BoundaryTerm = boundary_vector((i+1)*DELTA_T,n, C_STL)
+
+        x_total = b_matrix_builder(x_intial, BoundaryTerm)
+
+        x_curr = np.linalg.solve(A, x_total)
+
+        x_intial[:] = x_curr[:]
+
+        T_history[i,:] = x_curr[:]
+
+
+    for i in range(0, T_history.shape[0]):
+
+        temp = T_history[i,:]
+
+        index = int(n / 2)
+
+        T_interface = (temp[index-1]+ GAMMA*temp[index])/(1+GAMMA)
+
+        T_n = (temp[-1] + (LAMBDA*T_amb))/(1+LAMBDA)
+
+        T_0 = T_inital+(T_final-T_inital)*(1 - exp(-10*(i+1)*DELTA_T))
+
+
+        temp = np.insert(temp,index,T_interface)
+
+        temp = np.insert(temp,0,T_0)
+
+        temp = np.append(temp,T_n)
+
+        T_history_new[i,:] = temp
+
+        temp[:] = 0
+
+
+    spaceLocations_TC = spaceLocations_TC+inDia_TC
+    spaceLocations_STL = spaceLocations_STL+inDia_STL
+
+    spaceLocations_STL = np.delete(spaceLocations_STL,0)
+
+    spaceLocation_actual = np.concatenate((spaceLocations_TC,spaceLocations_STL))
+
+
+
+    return T_history_new, spaceLocation_actual, timeLocations
+
+
+
+
+
+
+
+
+
+
+T_history, spaceLocations, timeLocations= main_solver()
+
+plotter(T_history, spaceLocations, timeLocations)
+
 #
-#     T = np.zeros(len(timeLocations))
+# _,_, timeLocations = meshing()
 #
-#     for i in range(0, len(timeLocations)):
-#
-#         T[i] = 293+553*(1 - exp(-10*i*DELTA_T))
-#
-#
-#     plt.plot(timeLocations, T)
-#     plt.show()
-#
-
-
-
-
-
-spaceLocations_TC, spaceLocations_STL, timeLocations = meshing()
-
-print(matrix_builder(spaceLocations_STL,spaceLocations_TC))
-
-#
-# print(mainSolver(timeLocations))
-
 # test(timeLocations)
+
+
+
+
+
