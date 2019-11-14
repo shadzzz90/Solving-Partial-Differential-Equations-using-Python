@@ -1,10 +1,15 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.collections import LineCollection
+from matplotlib.colors import colorConverter
 from math import *
+from matplotlib import colors as mcolors
+from matplotlib import cm
 
-NUM_PTS_R_TC = 20
-NUM_PTS_R_STL = 20
+NUM_PTS_R_TC = 10
+NUM_PTS_R_STL = 10
 NUM_PTS_T = 80
 TIME = 100 # secs
 T_inital = 293 # K
@@ -303,6 +308,8 @@ def b_matrix_builder(b,BoundaryTerm ):
 
     return b_total
 
+def cc(arg):
+    return mcolors.to_rgba(arg, alpha=0.6)
 
 def plotter(T_history, spaceLocations, timeLocations):
 
@@ -312,14 +319,52 @@ def plotter(T_history, spaceLocations, timeLocations):
     #
     # plt.show()
 
+    # time = timeLocations.tolist()
+    #
+    # fig = plt.figure()
+    # ax = fig.gca(projection='3d')
+    # verts = []
+    #
+    # for i in range(0, T_history.shape[0]):
+    #
+    #     verts.append(list(zip(spaceLocations, T_history[i,:])))
+    #
+    # zs = [0.0, 1.0, 2.0]
+    # verts = [list(zip(spaceLocations,T_history[0,:])),list(zip(spaceLocations,T_history[30,:])), list(zip(spaceLocations,T_history[80,:]))]
+    #
+    # poly = PolyCollection(verts, facecolors = ['r','g','b'])
+    # poly.set_alpha(0.7)
+    # ax.add_collection3d(poly,zs=zs, zdir='x')
+    #
+    # plt.show()
 
-    plt.plot(spaceLocations, T_history[0,:], 'r')
-    plt.plot(spaceLocations, T_history[20, :], 'g')
-    plt.plot(spaceLocations, T_history[30, :],'b')
-    plt.plot(spaceLocations, T_history[50, :], '-ro')
-    plt.plot(spaceLocations, T_history[80, :], '-go')
-    plt.xlabel('Length (m)')
-    plt.ylabel('Temp')
+    fig = plt.figure()
+    ax = fig.gca(projection = '3d')
+    zs = range(0,T_history.shape[0])
+    verts = []
+
+    for z in zs:
+        ys = T_history[z,:]
+        verts.append(list(zip(spaceLocations,ys)))
+
+    poly = LineCollection(verts, linewidths=5)
+
+    # ax.plot_trisurf(poly, zs=zs)
+    ax.add_collection3d(poly, zs= zs, zdir='y')
+    ax.set_xlim3d(0.07, 0.20)
+    ax.set_ylim3d(0,100)
+    ax.set_zlim3d(0,600)
+
+
+
+
+    # plt.plot(spaceLocations, T_history[0,:], 'r')
+    # plt.plot(spaceLocations, T_history[20, :], 'g')
+    # plt.plot(spaceLocations, T_history[30, :],'b')
+    # plt.plot(spaceLocations, T_history[50, :], '-ro')
+    # plt.plot(spaceLocations, T_history[80, :], '-go')
+    # plt.xlabel('Length (m)')
+    # plt.ylabel('Temp')
     plt.show()
 
 
@@ -335,6 +380,7 @@ def main_solver():
     A, b, n, C_STL = matrix_builder(spaceLocations_STL, spaceLocations_TC)
 
     BoundaryTerm = boundary_vector(DELTA_T, n, C_STL)
+    # BoundaryTerm[-1] = (-LAMBDA*C_STL[-1]*T_amb)/(1+LAMBDA)
 
     b_total = b_matrix_builder(b, BoundaryTerm)
 
