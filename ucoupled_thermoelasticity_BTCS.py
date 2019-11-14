@@ -17,13 +17,13 @@ T_amb = 303 # K
 T_final = 573 # K
 
 h = 200 # W/m^2-K
-RHO_TC = 15.88*1e3 # Tungsten Carbide Kg/m^3
-Cp_TC = 0.292 # KJ/Kg-K
-K_TC = 88 # W/m-K
+RHO_TC = 15.25*1e3 # Tungsten Carbide Kg/m^3
+Cp_TC = 0.184 # KJ/Kg-K
+K_TC = 28 # W/m-K
 
-RHO_STL = 8000 # Stainless Steel AISI 304 Kg/m^3
-Cp_STL = 0.4 # KJ/Kg-K
-K_STL = 13.8 # W/m-K
+RHO_STL = 7833 # Steel 0.5% C Kg/m^3
+Cp_STL = 0.465 # KJ/Kg-K
+K_STL = 54 # W/m-K
 
 DIFF_TC = K_TC/(RHO_TC*Cp_TC)
 DIFF_STL = K_STL/(RHO_STL*Cp_STL)
