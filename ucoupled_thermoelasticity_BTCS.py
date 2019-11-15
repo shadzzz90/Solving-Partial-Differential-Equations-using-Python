@@ -8,10 +8,10 @@ from math import *
 from matplotlib import colors as mcolors
 from matplotlib import cm
 
-NUM_PTS_R_TC = 10
-NUM_PTS_R_STL = 10
-NUM_PTS_T = 80
-TIME = 100 # secs
+NUM_PTS_R_TC = 50
+NUM_PTS_R_STL = 50
+NUM_PTS_T = 100
+TIME = 10 # secs
 T_inital = 293 # K
 T_amb = 303 # K
 T_final = 573 # K
@@ -28,22 +28,22 @@ K_STL = 54 # W/m-K
 DIFF_TC = K_TC/(RHO_TC*Cp_TC)
 DIFF_STL = K_STL/(RHO_STL*Cp_STL)
 
-inDia_TC = 70*1e-3 # m
-outDia_TC = 80*1e-3 # m
+inR_TC = 70*1e-3 # m
+outR_TC = 80*1e-3 # m
 
-inDia_STL = 80*1e-3 # m
-outDia_STL = 200*1e-3 # m
+inR_STL = 80*1e-3 # m
+outR_STL = 200*1e-3 # m
 
-thickness_TC = outDia_TC - inDia_TC
-thickness_STL = outDia_STL -inDia_STL
+thickness_TC = outR_TC - inR_TC
+thickness_STL = outR_STL -inR_STL
 
 DELTA_R_TC = thickness_TC/NUM_PTS_R_TC
 DELTA_R_STL = thickness_STL/NUM_PTS_R_STL
 
 DELTA_T = TIME / NUM_PTS_T
 
-betaTC = (DIFF_TC * DELTA_T) / (DELTA_R_TC)
-betaSTL = (DIFF_STL * DELTA_T) / (DELTA_R_STL)
+betaTC = (DIFF_TC * DELTA_T) / DELTA_R_TC
+betaSTL = (DIFF_STL * DELTA_T) / DELTA_R_STL
 
 GAMMA = (K_STL*DELTA_R_TC)/(K_TC*DELTA_R_STL)
 
@@ -99,92 +99,127 @@ LAMBDA = (h*DELTA_R_STL)/K_STL
 #     b_TC[n_TC - 1] = b_TC[n_TC - 1] + ((GAMMA * betaTC) / (1 + GAMMA)) * (1 + (1 / n_TC)) * T_first_STL
 #
 #     return A_TC, b_TC
+#
+# def matrix_builder(spaceLocations_STL, spaceLocations_TC):
+#
+#     n = (len(spaceLocations_STL)-2)+(len(spaceLocations_TC)-2)
+#     A_TC = np.zeros(len(spaceLocations_TC)-3)
+#     A_STL = np.zeros(len(spaceLocations_STL)-2)
+#     C_TC = np.zeros(len(spaceLocations_TC)-2)
+#     C_STL = np.zeros(len(spaceLocations_STL)-3)
+#     B_TC = np.zeros(len(spaceLocations_TC)-2)
+#     B_STL = np.zeros(len(spaceLocations_STL)-2)
+#     A = np.zeros((n,n))
+#
+#
+#     for i in range(0, len(A_STL)):
+#
+#         A_STL[i] = - betaSTL*(1/DELTA_R_STL-1/(inDia_STL+(i+1)*DELTA_R_STL))
+#
+#     for i in range(0, len(A_TC)):
+#         A_TC[i] = - betaTC * (1 / DELTA_R_TC - 1 / (inDia_TC + (i+1) * DELTA_R_TC))
+#
+#     A_STL[0] = A_STL[0]/(1+GAMMA)
+#
+#     for i in range(0, len(C_TC)):
+#
+#         C_TC[i] = - betaTC*(1/DELTA_R_TC+1/(inDia_TC+(i+1)*DELTA_R_TC))
+#
+#     for i in range(0, len(C_STL)):
+#         C_STL[i] = - betaSTL * (1 / DELTA_R_STL + 1 / (inDia_STL + (i+1) * DELTA_R_STL))
+#
+#     C_TC[-1] = (GAMMA*C_TC[-1])/(1+GAMMA)
+#
+#     for i in range(0,len(B_TC)):
+#         B_TC[i] = 1+(2*betaTC)/DELTA_R_TC
+#
+#     for i in range(0,len(B_STL)):
+#         B_STL[i] = 1+(2*betaSTL)/DELTA_R_STL
+#
+#     B_TC[-1] = B_TC[-1]+C_TC[-1]/(1+GAMMA)
+#     B_STL[0] = B_STL[0]+(A_STL[0]*GAMMA)/(1+GAMMA)
+#     B_STL[-1] = B_STL[-1]+ C_STL[-1]/(1+LAMBDA)
+#
+#
+#     for i in range(0,len(spaceLocations_TC)-2):
+#
+#         A[i][i] = B_TC[i]
+#
+#     for i in range((len(spaceLocations_TC)-2), n):
+#
+#         A[i][i] = B_STL[i-(len(spaceLocations_TC)-2)]
+#
+#
+#     for i in range(0,len(spaceLocations_TC)-2):
+#
+#         A[i][i+1] = C_TC[i]
+#
+#     for i in range(0, len(spaceLocations_TC) - 3):
+#         A[i+1][i] = A_TC[i]
+#
+#
+#     for i in range((len(spaceLocations_TC)-2), n-1):
+#
+#         A[i][i+1] = C_STL[i-(len(spaceLocations_TC)-2)]
+#
+#
+#     for i in range((len(spaceLocations_TC)-3), n-1):
+#
+#         A[i+1][i] = A_STL[i-(len(spaceLocations_TC)-3)]
+#
+#
+#     b = np.full(n, T_inital)
+#
+#
+#
+#     return A, b, n, C_STL
+#
+#
+# def boundary_vector(t,n, C_STL):
+#
+#     BoundaryTerm = np.zeros(n)
+#     T = T_inital + (T_final-T_inital)*(1-exp(-10*t))
+#
+#     BoundaryTerm[0] = betaTC*T*(1/DELTA_R_TC-1/(inDia_TC+DELTA_R_TC))
+#
+#     BoundaryTerm[-1] = (-LAMBDA*C_STL[-1]*T_amb)/(1+LAMBDA)
+#
+#     return BoundaryTerm
 
-def matrix_builder(spaceLocations_STL, spaceLocations_TC):
-
-    n = (len(spaceLocations_STL)-2)+(len(spaceLocations_TC)-2)
-    A_TC = np.zeros(len(spaceLocations_TC)-3)
-    A_STL = np.zeros(len(spaceLocations_STL)-2)
-    C_TC = np.zeros(len(spaceLocations_TC)-2)
-    C_STL = np.zeros(len(spaceLocations_STL)-3)
-    B_TC = np.zeros(len(spaceLocations_TC)-2)
-    B_STL = np.zeros(len(spaceLocations_STL)-2)
-    A = np.zeros((n,n))
+def matrix_builder(spaceLocations, timeLocations):
 
 
-    for i in range(0, len(A_STL)):
+    A = np.zeros((len(spaceLocations), len(spaceLocations)))
 
-        A_STL[i] = - betaSTL*(1/DELTA_R_STL-1/(inDia_STL+(i+1)*DELTA_R_STL))
+    A[0][0] = 1
 
-    for i in range(0, len(A_TC)):
-        A_TC[i] = - betaTC * (1 / DELTA_R_TC - 1 / (inDia_TC + (i+1) * DELTA_R_TC))
+    for i in range(1, NUM_PTS_R_TC):
+        A[i][i+1] = -betaTC*(1/DELTA_R_TC + 1/spaceLocations[i])
+        A[i][i-1] = -betaTC*(1/DELTA_R_TC - 1/spaceLocations[i])
+        A[i][i] = 1+(2*betaTC)/DELTA_R_TC
 
-    A_STL[0] = A_STL[0]/(1+GAMMA)
+    A[NUM_PTS_R_TC][NUM_PTS_R_TC+1] = -GAMMA
+    A[NUM_PTS_R_TC][NUM_PTS_R_TC] = 1+GAMMA
+    A[NUM_PTS_R_TC][NUM_PTS_R_TC-1] = -1
 
-    for i in range(0, len(C_TC)):
+    for i in range(NUM_PTS_R_TC+1, len(spaceLocations)-1):
+        A[i][i+1] = -betaSTL*(1/DELTA_R_STL + 1/spaceLocations[i])
+        A[i][i-1] = -betaSTL*(1/DELTA_R_STL - 1/spaceLocations[i])
+        A[i][i] = 1+(2*betaSTL)/DELTA_R_STL
 
-        C_TC[i] = - betaTC*(1/DELTA_R_TC+1/(inDia_TC+(i+1)*DELTA_R_TC))
+    A[-1][-1] = (1+LAMBDA)
+    A[-1][-2] = -1
 
-    for i in range(0, len(C_STL)):
-        C_STL[i] = - betaSTL * (1 / DELTA_R_STL + 1 / (inDia_STL + (i+1) * DELTA_R_STL))
-
-    C_TC[-1] = (GAMMA*C_TC[-1])/(1+GAMMA)
-
-    for i in range(0,len(B_TC)):
-        B_TC[i] = 1+(2*betaTC)/DELTA_R_TC
-
-    for i in range(0,len(B_STL)):
-        B_STL[i] = 1+(2*betaSTL)/DELTA_R_STL
-
-    B_TC[-1] = B_TC[-1]+C_TC[-1]/(1+GAMMA)
-    B_STL[0] = B_STL[0]+(A_STL[0]*GAMMA)/(1+GAMMA)
-    B_STL[-1] = B_STL[-1]+ C_STL[-1]/(1+LAMBDA)
+    b = np.full(len(spaceLocations), T_inital)
+    b[0] =  T_inital+(T_final-T_inital)*(1 - exp(-10*DELTA_T))
+    b[NUM_PTS_R_TC] = 0
+    b[-1] = LAMBDA*T_amb
 
 
-    for i in range(0,len(spaceLocations_TC)-2):
-
-        A[i][i] = B_TC[i]
-
-    for i in range((len(spaceLocations_TC)-2), n):
-
-        A[i][i] = B_STL[i-(len(spaceLocations_TC)-2)]
-
-
-    for i in range(0,len(spaceLocations_TC)-2):
-
-        A[i][i+1] = C_TC[i]
-
-    for i in range(0, len(spaceLocations_TC) - 3):
-        A[i+1][i] = A_TC[i]
-
-
-    for i in range((len(spaceLocations_TC)-2), n-1):
-
-        A[i][i+1] = C_STL[i-(len(spaceLocations_TC)-2)]
-
-
-    for i in range((len(spaceLocations_TC)-3), n-1):
-
-        A[i+1][i] = A_STL[i-(len(spaceLocations_TC)-3)]
-
-
-    b = np.full(n, T_inital)
+    return A,b
 
 
 
-    return A, b, n, C_STL
-
-
-def boundary_vector(t,n, C_STL):
-
-    BoundaryTerm = np.zeros(n)
-    T = T_inital + (T_final-T_inital)*(1-exp(-10*t))
-
-    BoundaryTerm[0] = betaTC*T*(1/DELTA_R_TC-1/(inDia_TC+DELTA_R_TC))
-
-    BoundaryTerm[-1] = (-LAMBDA*C_STL[-1]*T_amb)/(1+LAMBDA)
-
-    return BoundaryTerm
 
 
 
@@ -196,15 +231,23 @@ def meshing():
     timeMeshLocations = np.zeros(NUM_PTS_T+1)
 
     for i in range(0,NUM_PTS_R_TC+1):
-        spaceMeshLocations_TC[i] = i*DELTA_R_TC
+        spaceMeshLocations_TC[i] = inR_TC+i*DELTA_R_TC
 
     for i in range(0, NUM_PTS_R_STL + 1):
-        spaceMeshLocations_STL[i] = i * DELTA_R_STL
+        spaceMeshLocations_STL[i] = inR_STL+i * DELTA_R_STL
 
     for i in range(0,NUM_PTS_T+1):
         timeMeshLocations[i] = i*DELTA_T
 
-    return spaceMeshLocations_TC, spaceMeshLocations_STL, timeMeshLocations
+    # n = len(spaceMeshLocations_STL)+len(spaceMeshLocations_TC)-1
+    # spaceMeshLocations = np.zeros(n)
+
+    spaceMeshLocations_STL= np.delete(spaceMeshLocations_STL,0)
+
+    spaceMeshLocations = np.concatenate((spaceMeshLocations_TC, spaceMeshLocations_STL))
+
+
+    return spaceMeshLocations, timeMeshLocations
 
 
 def SR_solver(A,b):
@@ -290,34 +333,34 @@ def SR_solver(A,b):
 #
 #     return  x_TC, x_STL
 
-def test(timeLocations):
+# def test(timeLocations):
+#
+#     T = np.zeros(len(timeLocations))
+#
+#     for i in range(0, len(timeLocations)):
+#
+#         T[i] = T_inital+(T_final-T_inital)*(1 - exp(-10*i*DELTA_T))
 
-    T = np.zeros(len(timeLocations))
+    #
+    # plt.plot(timeLocations, T)
+    # plt.show()
 
-    for i in range(0, len(timeLocations)):
+# def b_matrix_builder(b,BoundaryTerm ):
+#
+#     b_total = b+BoundaryTerm
+#
+#     return b_total
 
-        T[i] = T_inital+(T_final-T_inital)*(1 - exp(-10*i*DELTA_T))
-
-
-    plt.plot(timeLocations, T)
-    plt.show()
-
-def b_matrix_builder(b,BoundaryTerm ):
-
-    b_total = b+BoundaryTerm
-
-    return b_total
-
-def cc(arg):
-    return mcolors.to_rgba(arg, alpha=0.6)
+# def cc(arg):
+#     return mcolors.to_rgba(arg, alpha=0.6)
 
 def plotter(T_history, spaceLocations, timeLocations):
 
-    # plt.contour(timeLocations,spaceLocations,T_history.T)
-    # plt.xlabel('Time (s)')
-    # plt.ylabel('Length (m)')
-    #
-    # plt.show()
+    plt.contour(spaceLocations,timeLocations,T_history)
+    plt.xlabel('Length (m)')
+    plt.ylabel('Time (s)')
+
+    plt.show()
 
     # time = timeLocations.tolist()
     #
@@ -357,7 +400,7 @@ def plotter(T_history, spaceLocations, timeLocations):
 
 
 
-
+    #
     # plt.plot(spaceLocations, T_history[0,:], 'r')
     # plt.plot(spaceLocations, T_history[20, :], 'g')
     # plt.plot(spaceLocations, T_history[30, :],'b')
@@ -369,74 +412,96 @@ def plotter(T_history, spaceLocations, timeLocations):
 
 
 
+# def main_solver():
+#
+#
+#     spaceLocations_TC, spaceLocations_STL, timeLocations = meshing()
+#
+#
+#
+#     A, b, n, C_STL = matrix_builder(spaceLocations_STL, spaceLocations_TC)
+#
+#     BoundaryTerm = boundary_vector(DELTA_T, n, C_STL)
+#     # BoundaryTerm[-1] = (-LAMBDA*C_STL[-1]*T_amb)/(1+LAMBDA)
+#
+#     b_total = b_matrix_builder(b, BoundaryTerm)
+#
+#     x_intial = np.linalg.solve(A, b_total)
+#     x_curr = np.zeros(n)
+#     T_history = np.zeros((len(timeLocations), n))
+#     T_history_new = np.zeros((len(timeLocations), n+3))
+#     T_history[0,:] = x_intial[:]
+#
+#     for i in range(1, len(timeLocations)):
+#
+#         BoundaryTerm = boundary_vector((i+1)*DELTA_T,n, C_STL)
+#
+#         x_total = b_matrix_builder(x_intial, BoundaryTerm)
+#
+#         x_curr = np.linalg.solve(A, x_total)
+#
+#         x_intial[:] = x_curr[:]
+#
+#         T_history[i,:] = x_curr[:]
+#
+#
+#     for i in range(0, T_history.shape[0]):
+#
+#         temp = T_history[i,:]
+#
+#         index = int(n / 2)
+#
+#         T_interface = (temp[index-1]+ GAMMA*temp[index])/(1+GAMMA)
+#
+#         T_n = (temp[-1] + (LAMBDA*T_amb))/(1+LAMBDA)
+#
+#         T_0 = T_inital+(T_final-T_inital)*(1 - exp(-10*(i+1)*DELTA_T))
+#
+#
+#         temp = np.insert(temp,index,T_interface)
+#
+#         temp = np.insert(temp,0,T_0)
+#
+#         temp = np.append(temp,T_n)
+#
+#         T_history_new[i,:] = temp
+#
+#         temp[:] = 0
+#
+#
+#     spaceLocations_TC = spaceLocations_TC+inDia_TC
+#     spaceLocations_STL = spaceLocations_STL+inDia_STL
+#
+#     spaceLocations_STL = np.delete(spaceLocations_STL,0)
+#
+#     spaceLocation_actual = np.concatenate((spaceLocations_TC,spaceLocations_STL))
+#
+#
+#
+#     return T_history_new, spaceLocation_actual, timeLocations
+#
 
-def main_solver():
+def main_Solver(A, b, spaceLocations, timeLocations):
 
+    x_inital =  np.linalg.solve(A, b)
+    T_history = np.zeros((len(timeLocations), len(spaceLocations)))
+    T_history[0, :] = T_inital
+    T_history[0, -1] = T_amb
+    T_history[1,:] = x_inital[:]
 
-    spaceLocations_TC, spaceLocations_STL, timeLocations = meshing()
+    for i in range(2, len(timeLocations)):
 
+        x_inital[0] = T_inital+(T_final-T_inital)*(1 - exp(-10*(i+1)*DELTA_T))
+        x_inital[NUM_PTS_R_TC] = 0
+        x_inital[-1]= LAMBDA*T_amb
 
+        x_curr = np.linalg.solve(A,x_inital)
 
-    A, b, n, C_STL = matrix_builder(spaceLocations_STL, spaceLocations_TC)
-
-    BoundaryTerm = boundary_vector(DELTA_T, n, C_STL)
-    # BoundaryTerm[-1] = (-LAMBDA*C_STL[-1]*T_amb)/(1+LAMBDA)
-
-    b_total = b_matrix_builder(b, BoundaryTerm)
-
-    x_intial = np.linalg.solve(A, b_total)
-    x_curr = np.zeros(n)
-    T_history = np.zeros((len(timeLocations), n))
-    T_history_new = np.zeros((len(timeLocations), n+3))
-    T_history[0,:] = x_intial[:]
-
-    for i in range(1, len(timeLocations)):
-
-        BoundaryTerm = boundary_vector((i+1)*DELTA_T,n, C_STL)
-
-        x_total = b_matrix_builder(x_intial, BoundaryTerm)
-
-        x_curr = np.linalg.solve(A, x_total)
-
-        x_intial[:] = x_curr[:]
-
+        x_inital[:] = x_curr[:]
         T_history[i,:] = x_curr[:]
+        x_curr[:] = 0
 
-
-    for i in range(0, T_history.shape[0]):
-
-        temp = T_history[i,:]
-
-        index = int(n / 2)
-
-        T_interface = (temp[index-1]+ GAMMA*temp[index])/(1+GAMMA)
-
-        T_n = (temp[-1] + (LAMBDA*T_amb))/(1+LAMBDA)
-
-        T_0 = T_inital+(T_final-T_inital)*(1 - exp(-10*(i+1)*DELTA_T))
-
-
-        temp = np.insert(temp,index,T_interface)
-
-        temp = np.insert(temp,0,T_0)
-
-        temp = np.append(temp,T_n)
-
-        T_history_new[i,:] = temp
-
-        temp[:] = 0
-
-
-    spaceLocations_TC = spaceLocations_TC+inDia_TC
-    spaceLocations_STL = spaceLocations_STL+inDia_STL
-
-    spaceLocations_STL = np.delete(spaceLocations_STL,0)
-
-    spaceLocation_actual = np.concatenate((spaceLocations_TC,spaceLocations_STL))
-
-
-
-    return T_history_new, spaceLocation_actual, timeLocations
+    return T_history
 
 
 
@@ -446,8 +511,11 @@ def main_solver():
 
 
 
+spaceLocations, timeLocations = meshing()
 
-T_history, spaceLocations, timeLocations= main_solver()
+A, b = matrix_builder(spaceLocations, timeLocations)
+
+T_history = main_Solver(A,b,spaceLocations, timeLocations)
 
 plotter(T_history, spaceLocations, timeLocations)
 
