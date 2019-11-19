@@ -11,7 +11,7 @@ from matplotlib import cm
 NUM_PTS_R_TC = 50
 NUM_PTS_R_STL = 50
 NUM_PTS_T = 100
-TIME = 10 # secs
+TIME = 100 # secs
 T_inital = 293 # K
 T_amb = 303 # K
 T_final = 573 # K
@@ -48,6 +48,34 @@ betaSTL = (DIFF_STL * DELTA_T) / DELTA_R_STL
 GAMMA = (K_STL*DELTA_R_TC)/(K_TC*DELTA_R_STL)
 
 LAMBDA = (h*DELTA_R_STL)/K_STL
+
+nu_TC = 0.2
+nu_STL = 0.3
+
+Coeff_Thermal_Exp_TC = 4.5 * 1e-6 # /K
+Coeff_Thermal_Exp_STL = 1.24 * 1e-5 # /K
+
+E_TC = 620*1e9 # GPa
+E_STL = 210*1e9 # GPa
+
+Phi_TC = (1-nu_TC)/(1+nu_TC)
+Phi_STL = (1-nu_STL)/(1+nu_STL)
+
+Xi_TC = 2*nu_TC/(1+nu_TC)
+Xi_STL = 2*nu_STL/(1+nu_STL)
+
+Psi_TC = (1+nu_TC)*Coeff_Thermal_Exp_TC/(1-nu_TC)
+Psi_STL = (1+nu_STL)*Coeff_Thermal_Exp_STL/(1-nu_STL)
+
+Eta_TC = E_TC*(1-nu_TC)/(DELTA_R_TC*(1+nu_TC)*(1-2*nu_TC))
+Eta_STL = E_STL*(1-nu_STL)/(DELTA_R_STL*(1+nu_STL)*(1-2*nu_STL))
+
+Mu_TC = 2*E_TC*nu_TC/(outR_TC*(1+nu_TC)*(1-2*nu_TC))
+Mu_STL = 2*E_STL*nu_STL/(inR_STL*(1+nu_STL)*(1-2*nu_STL))
+
+Kappa_TC = E_TC*DIFF_TC/(1-2*nu_TC)
+Kappa_STL = E_STL*DIFF_STL/(1-2*nu_STL)
+
 
 
 # def matrix_builder_STL():
@@ -218,6 +246,49 @@ def matrix_builder(spaceLocations, timeLocations):
 
     return A,b
 
+def matrix_builder_DISP(spaceLocations, timeLocations, T_history):
+
+
+    A = np.zeros((len(spaceLocations), len(spaceLocations)))
+
+    A[0][0] = Xi_TC/spaceLocations[0] - Phi_TC/DELTA_R_TC
+    A[0][1] = Phi_TC / DELTA_R_TC
+
+
+    for i in range(1, NUM_PTS_R_TC):
+        A[i][i+1] = (2/Psi_TC)*(1/DELTA_R_TC + 1/spaceLocations[i])
+        A[i][i-1] = (2/Psi_TC)*(1/DELTA_R_TC - 1/spaceLocations[i])
+        A[i][i] = - (4/Psi_TC)*(1/DELTA_R_TC + DELTA_R_TC/(spaceLocations[i]**2))
+
+    A[NUM_PTS_R_TC][NUM_PTS_R_TC+1] = -Eta_STL
+    A[NUM_PTS_R_TC][NUM_PTS_R_TC] = Eta_TC+Eta_STL+Mu_TC-Mu_STL
+    A[NUM_PTS_R_TC][NUM_PTS_R_TC-1] = -Eta_TC
+
+    for i in range(NUM_PTS_R_TC+1, len(spaceLocations)-1):
+        A[i][i + 1] = (2 / Psi_STL) * (1 / DELTA_R_STL + 1 / spaceLocations[i])
+        A[i][i - 1] = (2 / Psi_STL) * (1 / DELTA_R_STL - 1 / spaceLocations[i])
+        A[i][i] = - (4 / Psi_STL) * (1 / DELTA_R_STL + DELTA_R_STL / (spaceLocations[i] ** 2))
+
+    A[-1][-1] = Xi_STL/spaceLocations[-1] + Phi_STL/DELTA_R_STL
+    A[-1][-2] = - Phi_STL / DELTA_R_STL
+
+    b = np.zeros((len(timeLocations), len(spaceLocations)))
+
+    for i in range(0,b.shape[0]):
+        b[i][0] = DIFF_TC*(T_history[i][0]-T_amb)
+
+        for j in range(1, b.shape[1]-1):
+            b[i][j] = T_history[i][j+1] - T_history[i][j-1]
+
+        b[i][NUM_PTS_R_TC] = (Kappa_TC - K_STL)*T_history[i][NUM_PTS_R_TC] - (Kappa_TC - K_STL) * T_amb
+        b[i][-1] = DIFF_STL * (T_history[i][-1] - T_amb)
+    # b[0] =  D
+    # b[NUM_PTS_R_TC] = 0
+    # b[-1] = LAMBDA*T_amb
+
+
+    return A,b
+
 
 
 
@@ -354,11 +425,21 @@ def SR_solver(A,b):
 # def cc(arg):
 #     return mcolors.to_rgba(arg, alpha=0.6)
 
-def plotter(T_history, spaceLocations, timeLocations):
+def plotter(T_history,u_history, spaceLocations, timeLocations):
 
     plt.contour(spaceLocations,timeLocations,T_history)
     plt.xlabel('Length (m)')
+    plt.xlim(0.07,0.2)
+    plt.ylim(0, 100)
     plt.ylabel('Time (s)')
+
+    plt.show()
+
+    plt.contour(spaceLocations, timeLocations, u_history)
+    plt.xlabel('Length (m)')
+    plt.ylabel('Time (s)')
+    plt.xlim(0.07, 0.2)
+    plt.ylim(0, 100)
 
     plt.show()
 
@@ -380,34 +461,62 @@ def plotter(T_history, spaceLocations, timeLocations):
     # ax.add_collection3d(poly,zs=zs, zdir='x')
     #
     # plt.show()
-
-    fig = plt.figure()
-    ax = fig.gca(projection = '3d')
-    zs = range(0,T_history.shape[0])
-    verts = []
-
-    for z in zs:
-        ys = T_history[z,:]
-        verts.append(list(zip(spaceLocations,ys)))
-
-    poly = LineCollection(verts, linewidths=5)
-
-    # ax.plot_trisurf(poly, zs=zs)
-    ax.add_collection3d(poly, zs= zs, zdir='y')
-    ax.set_xlim3d(0.07, 0.20)
-    ax.set_ylim3d(0,100)
-    ax.set_zlim3d(0,600)
-
-
-
     #
-    # plt.plot(spaceLocations, T_history[0,:], 'r')
-    # plt.plot(spaceLocations, T_history[20, :], 'g')
-    # plt.plot(spaceLocations, T_history[30, :],'b')
-    # plt.plot(spaceLocations, T_history[50, :], '-ro')
-    # plt.plot(spaceLocations, T_history[80, :], '-go')
-    # plt.xlabel('Length (m)')
-    # plt.ylabel('Temp')
+    # fig = plt.figure()
+    # ax = fig.gca(projection = '3d')
+    # zs = range(0,T_history.shape[0])
+    # verts = []
+    #
+    # for z in zs:
+    #     ys = T_history[z,:]
+    #     verts.append(list(zip(spaceLocations,ys)))
+    #
+    # poly = LineCollection(verts, linewidths=5)
+    #
+    # # ax.plot_trisurf(poly, zs=zs)
+    # ax.add_collection3d(poly, zs= zs, zdir='y')
+    # ax.set_xlim3d(0.07, 0.20)
+    # ax.set_ylim3d(0,100)
+    # ax.set_zlim3d(0,600)
+    #
+    #
+    #
+    # #
+    # # plt.plot(spaceLocations, T_history[0,:], 'r')
+    # # plt.plot(spaceLocations, T_history[20, :], 'g')
+    # # plt.plot(spaceLocations, T_history[30, :],'b')
+    # # plt.plot(spaceLocations, T_history[50, :], '-ro')
+    # # plt.plot(spaceLocations, T_history[80, :], '-go')
+    # # plt.xlabel('Length (m)')
+    # # plt.ylabel('Temp')
+    # plt.show()
+    #
+    # fig = plt.figure()
+    # ax = fig.gca(projection='3d')
+    # zs = range(0, u_history.shape[0])
+    # verts = []
+    #
+    # for z in zs:
+    #     ys = u_history[z, :]
+    #     verts.append(list(zip(spaceLocations, ys)))
+    #
+    # poly = LineCollection(verts, linewidths=5)
+    #
+    # # ax.plot_trisurf(poly, zs=zs)
+    # ax.add_collection3d(poly, zs=zs, zdir='y')
+    # ax.set_xlim3d(0.07, 0.20)
+    # ax.set_ylim3d(0, 100)
+    # ax.set_zlim3d(0, 1)
+    # plt.show()
+
+
+    plt.plot(spaceLocations, u_history[0,:], 'r')
+    plt.plot(spaceLocations, u_history[2, :], 'g')
+    plt.plot(spaceLocations, u_history[3, :],'b')
+    plt.plot(spaceLocations, u_history[5, :], '-ro')
+    plt.plot(spaceLocations, u_history[100, :], '-go')
+    plt.xlabel('Length (m)')
+    plt.ylabel('displacement (m')
     plt.show()
 
 
@@ -481,7 +590,7 @@ def plotter(T_history, spaceLocations, timeLocations):
 #     return T_history_new, spaceLocation_actual, timeLocations
 #
 
-def main_Solver(A, b, spaceLocations, timeLocations):
+def temp_Solver(A, b, spaceLocations, timeLocations):
 
     x_inital =  np.linalg.solve(A, b)
     T_history = np.zeros((len(timeLocations), len(spaceLocations)))
@@ -503,6 +612,18 @@ def main_Solver(A, b, spaceLocations, timeLocations):
 
     return T_history
 
+def disp_Solver(A, b, spaceLocations, timeLocations):
+
+
+    u_history = np.zeros((len(timeLocations), len(spaceLocations)))
+
+    for i in range(0, u_history.shape[0]):
+
+        u_history[i,:] = np.linalg.solve(A,b[i,:])
+
+
+
+    return u_history
 
 
 
@@ -512,18 +633,22 @@ def main_Solver(A, b, spaceLocations, timeLocations):
 
 
 spaceLocations, timeLocations = meshing()
-
+#
 A, b = matrix_builder(spaceLocations, timeLocations)
 
-T_history = main_Solver(A,b,spaceLocations, timeLocations)
+T_history = temp_Solver(A,b,spaceLocations, timeLocations)
 
-plotter(T_history, spaceLocations, timeLocations)
+# plotter(T_history, spaceLocations, timeLocations)
 
 #
 # _,_, timeLocations = meshing()
 #
 # test(timeLocations)
+A_disp, b_disp = matrix_builder_DISP(spaceLocations,timeLocations, T_history)
 
+u_history = disp_Solver(A_disp, b_disp, spaceLocations, timeLocations)
+
+plotter(T_history, u_history, spaceLocations,timeLocations)
 
 
 
