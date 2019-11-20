@@ -8,8 +8,8 @@ from math import *
 from matplotlib import colors as mcolors
 from matplotlib import cm
 
-NUM_PTS_R_TC = 50
-NUM_PTS_R_STL = 50
+NUM_PTS_R_TC = 500
+NUM_PTS_R_STL = 3000
 NUM_PTS_T = 100
 TIME = 100 # secs
 T_inital = 293 # K
@@ -18,11 +18,11 @@ T_final = 573 # K
 
 h = 200 # W/m^2-K
 RHO_TC = 15.25*1e3 # Tungsten Carbide Kg/m^3
-Cp_TC = 0.184 # KJ/Kg-K
+Cp_TC = 0.184 *1e3 # KJ/Kg-K
 K_TC = 28 # W/m-K
 
 RHO_STL = 7833 # Steel 0.5% C Kg/m^3
-Cp_STL = 0.465 # KJ/Kg-K
+Cp_STL = 0.465*1e3 # KJ/Kg-K
 K_STL = 54 # W/m-K
 
 DIFF_TC = K_TC/(RHO_TC*Cp_TC)
@@ -53,7 +53,7 @@ nu_TC = 0.2
 nu_STL = 0.3
 
 Coeff_Thermal_Exp_TC = 4.5 * 1e-6 # /K
-Coeff_Thermal_Exp_STL = 1.24 * 1e-5 # /K
+Coeff_Thermal_Exp_STL = 1.25 * 1e-5 # /K
 
 E_TC = 620*1e9 # GPa
 E_STL = 210*1e9 # GPa
@@ -76,145 +76,17 @@ Mu_STL = 2*E_STL*nu_STL/(inR_STL*(1+nu_STL)*(1-2*nu_STL))
 Kappa_TC = E_TC*DIFF_TC/(1-2*nu_TC)
 Kappa_STL = E_STL*DIFF_STL/(1-2*nu_STL)
 
+tau_TC = E_TC*(1-nu_TC)/((1+nu_TC)*(1-2*nu_TC))
+tau_STL = E_STL*(1-nu_STL)/((1+nu_STL)*(1-2*nu_STL))
+
+Theta_TC = 2*E_TC*nu_TC/((1+nu_TC)*(1-2*nu_TC))
+Theta_STL = 2*E_STL*nu_STL/((1+nu_STL)*(1-2*nu_STL))
 
 
-# def matrix_builder_STL():
-#
-#
-#     n_STL = len(spaceLocations_STL)-2
-#
-#     A_STL = np.zeros((n_STL,n_STL))
-#
-#     for i in range(0,n_STL-1):
-#         A_STL[i][i] = (1+2*betaSTL)
-#
-#     temp = (betaSTL/(1+LAMBDA))*(1+(1/n_STL))
-#
-#     A_STL[n_STL-1][n_STL-1] = 1+2*betaSTL-temp
-#
-#
-#     for i in range(0,n_STL-1):
-#         A_STL[i][i+1] = -betaSTL*(1+(1/(i+1)))
-#         A_STL[i+1][i] = -betaSTL*(1-(1/(i+2)))
-#
-#
-#     b_STL = np.full(n_STL, T_inital)
-#
-#     b_STL[n_STL-1] = b_STL[n_STL-1] + ((LAMBDA*betaSTL)/(1+LAMBDA))*(1+(1/n_STL))*T_amb
-#
-#
-#     return A_STL, b_STL
-#
-# def matrix_builder_TC(T_first_STL):
-#
-#     n_TC = len(spaceLocations_TC) - 2
-#
-#     A_TC = np.zeros((n_TC, n_TC))
-#
-#     for i in range(0, n_TC - 1):
-#         A_TC[i][i] = (1 + 2 * betaTC)
-#
-#     temp = (betaTC / (1 + GAMMA)) * (1 + (1 / n_TC))
-#
-#     A_TC[n_TC - 1][n_TC - 1] = 1 + 2 * betaTC - temp
-#
-#     for i in range(0,n_TC-1):
-#         A_TC[i][i+1] = -betaTC*(1+(1/(i+1)))
-#         A_TC[i+1][i] = -betaTC*(1-(1/(i+2)))
-#
-#     b_TC = np.full(n_TC, T_inital)
-#
-#     b_TC[n_TC - 1] = b_TC[n_TC - 1] + ((GAMMA * betaTC) / (1 + GAMMA)) * (1 + (1 / n_TC)) * T_first_STL
-#
-#     return A_TC, b_TC
-#
-# def matrix_builder(spaceLocations_STL, spaceLocations_TC):
-#
-#     n = (len(spaceLocations_STL)-2)+(len(spaceLocations_TC)-2)
-#     A_TC = np.zeros(len(spaceLocations_TC)-3)
-#     A_STL = np.zeros(len(spaceLocations_STL)-2)
-#     C_TC = np.zeros(len(spaceLocations_TC)-2)
-#     C_STL = np.zeros(len(spaceLocations_STL)-3)
-#     B_TC = np.zeros(len(spaceLocations_TC)-2)
-#     B_STL = np.zeros(len(spaceLocations_STL)-2)
-#     A = np.zeros((n,n))
-#
-#
-#     for i in range(0, len(A_STL)):
-#
-#         A_STL[i] = - betaSTL*(1/DELTA_R_STL-1/(inDia_STL+(i+1)*DELTA_R_STL))
-#
-#     for i in range(0, len(A_TC)):
-#         A_TC[i] = - betaTC * (1 / DELTA_R_TC - 1 / (inDia_TC + (i+1) * DELTA_R_TC))
-#
-#     A_STL[0] = A_STL[0]/(1+GAMMA)
-#
-#     for i in range(0, len(C_TC)):
-#
-#         C_TC[i] = - betaTC*(1/DELTA_R_TC+1/(inDia_TC+(i+1)*DELTA_R_TC))
-#
-#     for i in range(0, len(C_STL)):
-#         C_STL[i] = - betaSTL * (1 / DELTA_R_STL + 1 / (inDia_STL + (i+1) * DELTA_R_STL))
-#
-#     C_TC[-1] = (GAMMA*C_TC[-1])/(1+GAMMA)
-#
-#     for i in range(0,len(B_TC)):
-#         B_TC[i] = 1+(2*betaTC)/DELTA_R_TC
-#
-#     for i in range(0,len(B_STL)):
-#         B_STL[i] = 1+(2*betaSTL)/DELTA_R_STL
-#
-#     B_TC[-1] = B_TC[-1]+C_TC[-1]/(1+GAMMA)
-#     B_STL[0] = B_STL[0]+(A_STL[0]*GAMMA)/(1+GAMMA)
-#     B_STL[-1] = B_STL[-1]+ C_STL[-1]/(1+LAMBDA)
-#
-#
-#     for i in range(0,len(spaceLocations_TC)-2):
-#
-#         A[i][i] = B_TC[i]
-#
-#     for i in range((len(spaceLocations_TC)-2), n):
-#
-#         A[i][i] = B_STL[i-(len(spaceLocations_TC)-2)]
-#
-#
-#     for i in range(0,len(spaceLocations_TC)-2):
-#
-#         A[i][i+1] = C_TC[i]
-#
-#     for i in range(0, len(spaceLocations_TC) - 3):
-#         A[i+1][i] = A_TC[i]
-#
-#
-#     for i in range((len(spaceLocations_TC)-2), n-1):
-#
-#         A[i][i+1] = C_STL[i-(len(spaceLocations_TC)-2)]
-#
-#
-#     for i in range((len(spaceLocations_TC)-3), n-1):
-#
-#         A[i+1][i] = A_STL[i-(len(spaceLocations_TC)-3)]
-#
-#
-#     b = np.full(n, T_inital)
-#
-#
-#
-#     return A, b, n, C_STL
-#
-#
-# def boundary_vector(t,n, C_STL):
-#
-#     BoundaryTerm = np.zeros(n)
-#     T = T_inital + (T_final-T_inital)*(1-exp(-10*t))
-#
-#     BoundaryTerm[0] = betaTC*T*(1/DELTA_R_TC-1/(inDia_TC+DELTA_R_TC))
-#
-#     BoundaryTerm[-1] = (-LAMBDA*C_STL[-1]*T_amb)/(1+LAMBDA)
-#
-#     return BoundaryTerm
 
-def matrix_builder(spaceLocations, timeLocations):
+
+
+def matrix_builder_TEMP(spaceLocations, timeLocations):
 
 
     A = np.zeros((len(spaceLocations), len(spaceLocations)))
@@ -278,9 +150,12 @@ def matrix_builder_DISP(spaceLocations, timeLocations, T_history):
         b[i][0] = DIFF_TC*(T_history[i][0]-T_amb)
 
         for j in range(1, b.shape[1]-1):
-            b[i][j] = T_history[i][j+1] - T_history[i][j-1]
+            if j == NUM_PTS_R_TC:
+                b[i][j] = (Kappa_TC - Kappa_STL) * (T_history[i][j] - T_amb)
+            else:
+                b[i][j] = T_history[i][j+1] - T_history[i][j-1]
 
-        b[i][NUM_PTS_R_TC] = (Kappa_TC - K_STL)*T_history[i][NUM_PTS_R_TC] - (Kappa_TC - K_STL) * T_amb
+
         b[i][-1] = DIFF_STL * (T_history[i][-1] - T_amb)
     # b[0] =  D
     # b[NUM_PTS_R_TC] = 0
@@ -378,54 +253,8 @@ def SR_solver(A,b):
 
     return x_next
 
-# def mainSolver(timeLocations):
-#
-#
-#
-#     A_STL, b_STL = matrix_builder_STL()
-#
-#     x_STL = SR_solver(A_STL, b_STL)
-#
-#     A_TC, b_TC = matrix_builder_TC(x_STL[0])
-#
-#     x_TC = SR_solver(A_TC, b_TC)
-#
-#     for i in range(1,len(timeLocations)):
-#
-#         x_curr_STL = SR_solver(A_STL,x_STL)
-#
-#         x_curr_TC =  SR_solver(A_TC,x_TC)
-#
-#         x_STL[:] = x_curr_STL[:]
-#         x_TC[:] = x_curr_TC[:]
-#     # x_STL2 = SR_solver(A_STL, x_STL)
-#     # x_TC2 = SR_solver(A_TC,x_TC)
-#
-#
-#     return  x_TC, x_STL
 
-# def test(timeLocations):
-#
-#     T = np.zeros(len(timeLocations))
-#
-#     for i in range(0, len(timeLocations)):
-#
-#         T[i] = T_inital+(T_final-T_inital)*(1 - exp(-10*i*DELTA_T))
-
-    #
-    # plt.plot(timeLocations, T)
-    # plt.show()
-
-# def b_matrix_builder(b,BoundaryTerm ):
-#
-#     b_total = b+BoundaryTerm
-#
-#     return b_total
-
-# def cc(arg):
-#     return mcolors.to_rgba(arg, alpha=0.6)
-
-def plotter(T_history,u_history, spaceLocations, timeLocations):
+def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations):
 
     plt.contour(spaceLocations,timeLocations,T_history)
     plt.xlabel('Length (m)')
@@ -436,6 +265,14 @@ def plotter(T_history,u_history, spaceLocations, timeLocations):
     plt.show()
 
     plt.contour(spaceLocations, timeLocations, u_history)
+    plt.xlabel('Length (m)')
+    plt.ylabel('Time (s)')
+    plt.xlim(0.07, 0.2)
+    plt.ylim(0, 100)
+
+    plt.show()
+
+    plt.contour(spaceLocations, timeLocations, stress_history)
     plt.xlabel('Length (m)')
     plt.ylabel('Time (s)')
     plt.xlim(0.07, 0.2)
@@ -462,22 +299,22 @@ def plotter(T_history,u_history, spaceLocations, timeLocations):
     #
     # plt.show()
     #
-    # fig = plt.figure()
-    # ax = fig.gca(projection = '3d')
-    # zs = range(0,T_history.shape[0])
-    # verts = []
-    #
-    # for z in zs:
-    #     ys = T_history[z,:]
-    #     verts.append(list(zip(spaceLocations,ys)))
-    #
-    # poly = LineCollection(verts, linewidths=5)
-    #
-    # # ax.plot_trisurf(poly, zs=zs)
-    # ax.add_collection3d(poly, zs= zs, zdir='y')
-    # ax.set_xlim3d(0.07, 0.20)
-    # ax.set_ylim3d(0,100)
-    # ax.set_zlim3d(0,600)
+    fig = plt.figure()
+    ax = fig.gca(projection = '3d')
+    zs = range(0,T_history.shape[0])
+    verts = []
+
+    for z in zs:
+        ys = T_history[z,:]
+        verts.append(list(zip(spaceLocations,ys)))
+
+    poly = LineCollection(verts, linewidths=1)
+
+    # ax.plot_trisurf(poly, zs=zs)
+    ax.add_collection3d(poly, zs= zs, zdir='y')
+    ax.set_xlim3d(0.07, 0.20)
+    ax.set_ylim3d(0,100)
+    ax.set_zlim3d(0,600)
     #
     #
     #
@@ -489,25 +326,43 @@ def plotter(T_history,u_history, spaceLocations, timeLocations):
     # # plt.plot(spaceLocations, T_history[80, :], '-go')
     # # plt.xlabel('Length (m)')
     # # plt.ylabel('Temp')
-    # plt.show()
+    plt.show()
     #
-    # fig = plt.figure()
-    # ax = fig.gca(projection='3d')
-    # zs = range(0, u_history.shape[0])
-    # verts = []
-    #
-    # for z in zs:
-    #     ys = u_history[z, :]
-    #     verts.append(list(zip(spaceLocations, ys)))
-    #
-    # poly = LineCollection(verts, linewidths=5)
-    #
-    # # ax.plot_trisurf(poly, zs=zs)
-    # ax.add_collection3d(poly, zs=zs, zdir='y')
-    # ax.set_xlim3d(0.07, 0.20)
-    # ax.set_ylim3d(0, 100)
-    # ax.set_zlim3d(0, 1)
-    # plt.show()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    zs = range(0, u_history.shape[0])
+    verts = []
+
+    for z in zs:
+        ys = u_history[z, :]
+        verts.append(list(zip(spaceLocations, ys)))
+
+    poly = LineCollection(verts, linewidths=1)
+
+    # ax.plot_trisurf(poly, zs=zs)
+    ax.add_collection3d(poly, zs=zs, zdir='y')
+    ax.set_xlim3d(0.07, 0.20)
+    ax.set_ylim3d(0, 100)
+    ax.set_zlim3d(0, 0.1)
+    plt.show()
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    zs = range(0, u_history.shape[0])
+    verts = []
+
+    for z in zs:
+        ys = stress_history[z, :]
+        verts.append(list(zip(spaceLocations, ys)))
+
+    poly = LineCollection(verts, linewidths=1)
+
+    # ax.plot_trisurf(poly, zs=zs)
+    ax.add_collection3d(poly, zs=zs, zdir='y')
+    ax.set_xlim3d(0.07, 0.20)
+    ax.set_ylim3d(0, 100)
+    ax.set_zlim3d(-1e8, 10e8)
+    plt.show()
 
 
     plt.plot(spaceLocations, u_history[0,:], 'r')
@@ -519,83 +374,24 @@ def plotter(T_history,u_history, spaceLocations, timeLocations):
     plt.ylabel('displacement (m')
     plt.show()
 
+    plt.plot(spaceLocations, stress_history[0, :], 'r')
+    plt.plot(spaceLocations, stress_history[2, :], 'g')
+    plt.plot(spaceLocations, stress_history[3, :], 'b')
+    plt.plot(spaceLocations, stress_history[5, :], '-ro')
+    plt.plot(spaceLocations, stress_history[100, :], '-go')
+    plt.xlabel('Length (m)')
+    plt.ylabel('displacement (m')
+    plt.show()
 
 
-# def main_solver():
-#
-#
-#     spaceLocations_TC, spaceLocations_STL, timeLocations = meshing()
-#
-#
-#
-#     A, b, n, C_STL = matrix_builder(spaceLocations_STL, spaceLocations_TC)
-#
-#     BoundaryTerm = boundary_vector(DELTA_T, n, C_STL)
-#     # BoundaryTerm[-1] = (-LAMBDA*C_STL[-1]*T_amb)/(1+LAMBDA)
-#
-#     b_total = b_matrix_builder(b, BoundaryTerm)
-#
-#     x_intial = np.linalg.solve(A, b_total)
-#     x_curr = np.zeros(n)
-#     T_history = np.zeros((len(timeLocations), n))
-#     T_history_new = np.zeros((len(timeLocations), n+3))
-#     T_history[0,:] = x_intial[:]
-#
-#     for i in range(1, len(timeLocations)):
-#
-#         BoundaryTerm = boundary_vector((i+1)*DELTA_T,n, C_STL)
-#
-#         x_total = b_matrix_builder(x_intial, BoundaryTerm)
-#
-#         x_curr = np.linalg.solve(A, x_total)
-#
-#         x_intial[:] = x_curr[:]
-#
-#         T_history[i,:] = x_curr[:]
-#
-#
-#     for i in range(0, T_history.shape[0]):
-#
-#         temp = T_history[i,:]
-#
-#         index = int(n / 2)
-#
-#         T_interface = (temp[index-1]+ GAMMA*temp[index])/(1+GAMMA)
-#
-#         T_n = (temp[-1] + (LAMBDA*T_amb))/(1+LAMBDA)
-#
-#         T_0 = T_inital+(T_final-T_inital)*(1 - exp(-10*(i+1)*DELTA_T))
-#
-#
-#         temp = np.insert(temp,index,T_interface)
-#
-#         temp = np.insert(temp,0,T_0)
-#
-#         temp = np.append(temp,T_n)
-#
-#         T_history_new[i,:] = temp
-#
-#         temp[:] = 0
-#
-#
-#     spaceLocations_TC = spaceLocations_TC+inDia_TC
-#     spaceLocations_STL = spaceLocations_STL+inDia_STL
-#
-#     spaceLocations_STL = np.delete(spaceLocations_STL,0)
-#
-#     spaceLocation_actual = np.concatenate((spaceLocations_TC,spaceLocations_STL))
-#
-#
-#
-#     return T_history_new, spaceLocation_actual, timeLocations
-#
+
 
 def temp_Solver(A, b, spaceLocations, timeLocations):
 
     x_inital =  np.linalg.solve(A, b)
     T_history = np.zeros((len(timeLocations), len(spaceLocations)))
     T_history[0, :] = T_inital
-    T_history[0, -1] = T_amb
+    # T_history[0, -1] = T_amb
     T_history[1,:] = x_inital[:]
 
     for i in range(2, len(timeLocations)):
@@ -625,7 +421,24 @@ def disp_Solver(A, b, spaceLocations, timeLocations):
 
     return u_history
 
+def stress_Solver(T_history, u_history, spaceLocations, timeLocations):
 
+    stress_history = np.zeros_like(T_history)
+
+    for i in range(0, stress_history.shape[0]):
+        stress_history[i][0] = 0
+
+        for j in range(1, NUM_PTS_R_TC+1):
+            stress_history[i][j] = (tau_TC/DELTA_R_TC + Theta_TC/spaceLocations[j])*u_history[i][j] - (tau_TC/DELTA_R_TC)*u_history[i][j-1]-Kappa_TC*(T_history[i][j] - T_amb)
+
+        for j in range(NUM_PTS_R_TC+1,stress_history.shape[1]-1):
+            stress_history[i][j] = (tau_STL /DELTA_R_STL + Theta_STL / spaceLocations[j]) * u_history[i][j] - (tau_STL /DELTA_R_STL) * u_history[i][j - 1] - Kappa_STL * (T_history[i][j] - T_amb)
+
+        # stress_history[i][NUM_PTS_R_TC] = (stress_history[i][NUM_PTS_R_TC-1]+stress_history[i][NUM_PTS_R_TC+1])/2
+        stress_history[i][-1] = 0
+
+
+    return stress_history
 
 
 
@@ -634,7 +447,7 @@ def disp_Solver(A, b, spaceLocations, timeLocations):
 
 spaceLocations, timeLocations = meshing()
 #
-A, b = matrix_builder(spaceLocations, timeLocations)
+A, b = matrix_builder_TEMP(spaceLocations, timeLocations)
 
 T_history = temp_Solver(A,b,spaceLocations, timeLocations)
 
@@ -648,7 +461,9 @@ A_disp, b_disp = matrix_builder_DISP(spaceLocations,timeLocations, T_history)
 
 u_history = disp_Solver(A_disp, b_disp, spaceLocations, timeLocations)
 
-plotter(T_history, u_history, spaceLocations,timeLocations)
+stress_history = stress_Solver(T_history,u_history,spaceLocations, timeLocations)
+
+plotter(T_history, u_history, stress_history, spaceLocations,timeLocations)
 
 
 
