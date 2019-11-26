@@ -18,6 +18,8 @@ T_final = 573 # K
 # T_final = 303 # K
 
 h = 200 # W/m^2-K
+
+
 RHO_TC = 15.25*1e3 # Tungsten Carbide Kg/m^3
 Cp_TC = 0.184 *1e3 # KJ/Kg-K
 K_TC = 28 # W/m-K
