@@ -8,8 +8,8 @@ from math import *
 from matplotlib import colors as mcolors
 from matplotlib import cm
 
-NUM_PTS_R_TC = 500
-NUM_PTS_R_STL = 3000
+NUM_PTS_R_TC = 100
+NUM_PTS_R_STL = 1000
 NUM_PTS_T = 100
 TIME = 100 # secs
 T_inital = 293 # K
@@ -196,11 +196,11 @@ def meshing():
     return spaceMeshLocations, timeMeshLocations
 
 
-def SR_solver(A,b):
+def SR_solver(A,b, relax_factor):
     """Sucessive Relaxation Solver"""
 
     n=len(b)
-    relax_factor = 1.76
+    # relax_factor = 1.76
     epsilon = 1e-8
 
     # A = np.random.randn(n,n)+4*np.eye(n)
@@ -251,12 +251,14 @@ def SR_solver(A,b):
             print('Total Iteration : {}'.format(iteration_number))
             break
 
-    return x_next
+    return x_next, iteration_number
 
 
 def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations):
 
-    plt.contour(spaceLocations,timeLocations,T_history)
+    plt.contourf(spaceLocations,timeLocations,T_history, cmap = 'rainbow')
+    cbar = plt.colorbar()
+    cbar.ax.set_ylabel('Tempreature (K)')
     plt.xlabel('Length (m)')
     plt.xlim(0.07,0.2)
     plt.ylim(0, 100)
@@ -264,7 +266,9 @@ def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations)
 
     plt.show()
 
-    plt.contour(spaceLocations, timeLocations, u_history)
+    plt.contourf(spaceLocations, timeLocations, u_history, cmap = 'rainbow')
+    cbar = plt.colorbar()
+    cbar.ax.set_ylabel('Displacement (m)')
     plt.xlabel('Length (m)')
     plt.ylabel('Time (s)')
     plt.xlim(0.07, 0.2)
@@ -272,7 +276,9 @@ def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations)
 
     plt.show()
 
-    plt.contour(spaceLocations, timeLocations, stress_history)
+    plt.contourf(spaceLocations, timeLocations, stress_history, cmap ='rainbow')
+    cbar = plt.colorbar()
+    cbar.ax.set_ylabel('Stress (Pa)')
     plt.xlabel('Length (m)')
     plt.ylabel('Time (s)')
     plt.xlim(0.07, 0.2)
@@ -280,25 +286,7 @@ def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations)
 
     plt.show()
 
-    # time = timeLocations.tolist()
-    #
-    # fig = plt.figure()
-    # ax = fig.gca(projection='3d')
-    # verts = []
-    #
-    # for i in range(0, T_history.shape[0]):
-    #
-    #     verts.append(list(zip(spaceLocations, T_history[i,:])))
-    #
-    # zs = [0.0, 1.0, 2.0]
-    # verts = [list(zip(spaceLocations,T_history[0,:])),list(zip(spaceLocations,T_history[30,:])), list(zip(spaceLocations,T_history[80,:]))]
-    #
-    # poly = PolyCollection(verts, facecolors = ['r','g','b'])
-    # poly.set_alpha(0.7)
-    # ax.add_collection3d(poly,zs=zs, zdir='x')
-    #
-    # plt.show()
-    #
+
     fig = plt.figure()
     ax = fig.gca(projection = '3d')
     zs = range(0,T_history.shape[0])
@@ -313,21 +301,15 @@ def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations)
     # ax.plot_trisurf(poly, zs=zs)
     ax.add_collection3d(poly, zs= zs, zdir='y')
     ax.set_xlim3d(0.07, 0.20)
+    ax.set_xlabel('Length (m)')
     ax.set_ylim3d(0,100)
+    ax.set_ylabel('Time (secs)')
     ax.set_zlim3d(0,600)
-    #
-    #
-    #
-    # #
-    # # plt.plot(spaceLocations, T_history[0,:], 'r')
-    # # plt.plot(spaceLocations, T_history[20, :], 'g')
-    # # plt.plot(spaceLocations, T_history[30, :],'b')
-    # # plt.plot(spaceLocations, T_history[50, :], '-ro')
-    # # plt.plot(spaceLocations, T_history[80, :], '-go')
-    # # plt.xlabel('Length (m)')
-    # # plt.ylabel('Temp')
+    ax.set_zlabel('Tempreature (K)')
     plt.show()
-    #
+
+
+
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     zs = range(0, u_history.shape[0])
@@ -342,13 +324,16 @@ def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations)
     # ax.plot_trisurf(poly, zs=zs)
     ax.add_collection3d(poly, zs=zs, zdir='y')
     ax.set_xlim3d(0.07, 0.20)
+    ax.set_xlabel('Length (m)')
     ax.set_ylim3d(0, 100)
-    ax.set_zlim3d(0, 0.1)
+    ax.set_ylabel('Time (secs)')
+    ax.set_zlim3d(-3e-4, 1e-4 )
+    ax.set_zlabel('Displacement (m)')
     plt.show()
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    zs = range(0, u_history.shape[0])
+    zs = range(0, stress_history.shape[0])
     verts = []
 
     for z in zs:
@@ -360,18 +345,48 @@ def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations)
     # ax.plot_trisurf(poly, zs=zs)
     ax.add_collection3d(poly, zs=zs, zdir='y')
     ax.set_xlim3d(0.07, 0.20)
+    ax.set_xlabel('Length (m)')
     ax.set_ylim3d(0, 100)
-    ax.set_zlim3d(-1e8, 10e8)
+    ax.set_ylabel('Time (secs)')
+    ax.set_zlim3d(-1e8, 9e8)
+    ax.set_zlabel('Stress (Pa)')
+
+    plt.show()
+
+
+    plt.plot(spaceLocations, T_history[0,:], 'r')
+    plt.plot(spaceLocations, T_history[10, :], 'g')
+    plt.plot(spaceLocations, T_history[25, :],'b')
+    plt.plot(spaceLocations, T_history[50, :], '-ro')
+    plt.plot(spaceLocations, T_history[100, :], '-go')
+    plt.xlabel('Length (m)')
+    plt.title('Tempreature (K) vs Length(m)')
+    plt.ylabel('Tempearture (K)')
+    label0 = 't = 0 secs'
+    label1 = 't = 10 secs'
+    label2 = 't = 25 secs'
+    label3 = 't = 50 secs'
+    label4 = 't = 100 secs'
+
+    plt.gca().legend((label0, label1, label2, label3, label4), loc='upper right')
     plt.show()
 
 
     plt.plot(spaceLocations, u_history[0,:], 'r')
-    plt.plot(spaceLocations, u_history[2, :], 'g')
-    plt.plot(spaceLocations, u_history[3, :],'b')
-    plt.plot(spaceLocations, u_history[5, :], '-ro')
+    plt.plot(spaceLocations, u_history[10, :], 'g')
+    plt.plot(spaceLocations, u_history[25, :],'b')
+    plt.plot(spaceLocations, u_history[50, :], '-ro')
     plt.plot(spaceLocations, u_history[100, :], '-go')
     plt.xlabel('Length (m)')
-    plt.ylabel('displacement (m')
+    plt.ylabel('Displacement (m)')
+    plt.title('Displacement (m) vs Length(m)')
+    label0 = 't = 0 secs'
+    label1 = 't = 10 secs'
+    label2 = 't = 25 secs'
+    label3 = 't = 50 secs'
+    label4 = 't = 100 secs'
+
+    plt.gca().legend((label0, label1, label2, label3, label4), loc='upper right')
     plt.show()
 
     plt.plot(spaceLocations, stress_history[0, :], 'r')
@@ -380,15 +395,27 @@ def plotter(T_history,u_history, stress_history,  spaceLocations, timeLocations)
     plt.plot(spaceLocations, stress_history[5, :], '-ro')
     plt.plot(spaceLocations, stress_history[100, :], '-go')
     plt.xlabel('Length (m)')
-    plt.ylabel('displacement (m')
+    plt.ylabel('Stress (Pa)')
+    plt.title('Stress (Pa) vs Length(m)')
+    label0 = 't = 0 secs'
+    label1 = 't = 10 secs'
+    label2 = 't = 25 secs'
+    label3 = 't = 50 secs'
+    label4 = 't = 100 secs'
+
+    plt.gca().legend((label0, label1, label2, label3, label4), loc='upper right')
     plt.show()
 
 
 
 
-def temp_Solver(A, b, spaceLocations, timeLocations):
+def temp_Solver(A, b, spaceLocations, timeLocations, relaxFactor):
 
-    x_inital =  np.linalg.solve(A, b)
+    # iteration = 0
+    # x_inital, itr =  SR_solver(A, b, relaxFactor)
+    x_inital= np.linalg.solve(A, b)
+    # iteration = iteration+itr
+
     T_history = np.zeros((len(timeLocations), len(spaceLocations)))
     T_history[0, :] = T_inital
     # T_history[0, -1] = T_amb
@@ -400,25 +427,32 @@ def temp_Solver(A, b, spaceLocations, timeLocations):
         x_inital[NUM_PTS_R_TC] = 0
         x_inital[-1]= LAMBDA*T_amb
 
+        # x_curr, itr = SR_solver(A,x_inital, relaxFactor)
         x_curr = np.linalg.solve(A,x_inital)
+        # iteration = iteration+itr
 
         x_inital[:] = x_curr[:]
         T_history[i,:] = x_curr[:]
         x_curr[:] = 0
 
+    # return T_history, iteration
     return T_history
 
-def disp_Solver(A, b, spaceLocations, timeLocations):
+def disp_Solver(A, b, spaceLocations, timeLocations, relaxFactor):
 
+    iterations = 0
 
     u_history = np.zeros((len(timeLocations), len(spaceLocations)))
 
     for i in range(0, u_history.shape[0]):
 
-        u_history[i,:] = np.linalg.solve(A,b[i,:])
+        # u_history[i,:], itr = SR_solver(A,b[i,:], relaxFactor)
+        u_history[i, :] = np.linalg.solve(A, b[i, :])
+        # iterations = iterations + itr
 
 
 
+    # return u_history, iterations
     return u_history
 
 def stress_Solver(T_history, u_history, spaceLocations, timeLocations):
@@ -442,28 +476,38 @@ def stress_Solver(T_history, u_history, spaceLocations, timeLocations):
 
 
 
-
-
-
 spaceLocations, timeLocations = meshing()
+
+# relaxFactors = np.arange(0.1,1.98,0.01)
+relaxFactors = np.full(1,1.97)
+# iterations = np.zeros_like(relaxFactors)
+index = 0
+
+for relaxFactor in relaxFactors:
+
+    A, b = matrix_builder_TEMP(spaceLocations, timeLocations)
+    # T_history, temp_iteration = temp_Solver(A,b,spaceLocations, timeLocations, relaxFactor)
+    T_history = temp_Solver(A, b, spaceLocations, timeLocations, relaxFactor)
+    A_disp, b_disp = matrix_builder_DISP(spaceLocations,timeLocations, T_history)
+    # u_history, disp_iteration = disp_Solver(A_disp, b_disp, spaceLocations, timeLocations, relaxFactor)
+    u_history = disp_Solver(A_disp, b_disp, spaceLocations, timeLocations, relaxFactor)
+    stress_history = stress_Solver(T_history,u_history,spaceLocations, timeLocations)
+    plotter(T_history, u_history, stress_history, spaceLocations,timeLocations)
+    # total_iterations = (temp_iteration+disp_iteration)
+    # print('Total Iteration for relax factor {0:0f} is {0:0}'.format(relaxFactor,total_iterations))
+    # iterations[index] = total_iterations
+    # index = index+1
+
+# np.save('relaxation_factor', relaxFactors)
+# np.save('Total_iterations', iterations)
 #
-A, b = matrix_builder_TEMP(spaceLocations, timeLocations)
+# plt.plot(relaxFactors, iterations)
+# plt.title("Parametric Study for optimal relaxation factor")
+# plt.xlabel("Relaxation Factor")
+# plt.ylabel("Total Iterations")
+# plt.show()
 
-T_history = temp_Solver(A,b,spaceLocations, timeLocations)
 
-# plotter(T_history, spaceLocations, timeLocations)
-
-#
-# _,_, timeLocations = meshing()
-#
-# test(timeLocations)
-A_disp, b_disp = matrix_builder_DISP(spaceLocations,timeLocations, T_history)
-
-u_history = disp_Solver(A_disp, b_disp, spaceLocations, timeLocations)
-
-stress_history = stress_Solver(T_history,u_history,spaceLocations, timeLocations)
-
-plotter(T_history, u_history, stress_history, spaceLocations,timeLocations)
 
 
 
