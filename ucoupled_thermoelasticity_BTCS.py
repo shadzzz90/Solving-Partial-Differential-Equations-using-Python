@@ -9,21 +9,26 @@ from matplotlib import colors as mcolors
 from matplotlib import cm
 
 NUM_PTS_R_TC = 100
-NUM_PTS_R_STL = 1000
+NUM_PTS_R_STL = 4000
 NUM_PTS_T = 100
 TIME = 100 # secs
 T_inital = 293 # K
 T_amb = 303 # K
 T_final = 573 # K
+# T_final = 303 # K
 
 h = 200 # W/m^2-K
 RHO_TC = 15.25*1e3 # Tungsten Carbide Kg/m^3
 Cp_TC = 0.184 *1e3 # KJ/Kg-K
 K_TC = 28 # W/m-K
 
-RHO_STL = 7833 # Steel 0.5% C Kg/m^3
-Cp_STL = 0.465*1e3 # KJ/Kg-K
-K_STL = 54 # W/m-K
+# RHO_STL = 7833 # Steel 0.5% C Kg/m^3
+# Cp_STL = 0.465*1e3 # KJ/Kg-K
+# K_STL = 54 # W/m-K
+
+RHO_STL = RHO_TC # Steel 0.5% C Kg/m^3
+Cp_STL = Cp_TC # KJ/Kg-K
+K_STL = K_TC # W/m-K
 
 DIFF_TC = K_TC/(RHO_TC*Cp_TC)
 DIFF_STL = K_STL/(RHO_STL*Cp_STL)
@@ -50,13 +55,18 @@ GAMMA = (K_STL*DELTA_R_TC)/(K_TC*DELTA_R_STL)
 LAMBDA = (h*DELTA_R_STL)/K_STL
 
 nu_TC = 0.2
-nu_STL = 0.3
+# nu_STL = 0.3
+nu_STL = nu_TC
 
 Coeff_Thermal_Exp_TC = 4.5 * 1e-6 # /K
-Coeff_Thermal_Exp_STL = 1.25 * 1e-5 # /K
+# Coeff_Thermal_Exp_STL = 1.25 * 1e-5 # /K
+
+Coeff_Thermal_Exp_STL = Coeff_Thermal_Exp_TC
 
 E_TC = 620*1e9 # GPa
-E_STL = 210*1e9 # GPa
+# E_STL = 210*1e9 # GPa
+
+E_STL = E_TC
 
 Phi_TC = (1-nu_TC)/(1+nu_TC)
 Phi_STL = (1-nu_STL)/(1+nu_STL)
@@ -468,7 +478,7 @@ def stress_Solver(T_history, u_history, spaceLocations, timeLocations):
         for j in range(NUM_PTS_R_TC+1,stress_history.shape[1]-1):
             stress_history[i][j] = (tau_STL /DELTA_R_STL + Theta_STL / spaceLocations[j]) * u_history[i][j] - (tau_STL /DELTA_R_STL) * u_history[i][j - 1] - Kappa_STL * (T_history[i][j] - T_amb)
 
-        # stress_history[i][NUM_PTS_R_TC] = (stress_history[i][NUM_PTS_R_TC-1]+stress_history[i][NUM_PTS_R_TC+1])/2
+        # stress_history[i][NUM_PTS_R_TC] = stress_history[i][NUM_PTS_R_TC+1]
         stress_history[i][-1] = 0
 
 
